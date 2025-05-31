@@ -76,7 +76,7 @@ local function createNote(dir, name, float)
   lastNote = note
 end
 
-local function searchNotes(dir, type, float)
+function M.searchNotes(dir, type, float)
   local opts = {
     prompt = type == "files" and "Find Note:" or "Search Notes: ",
     cwd = dir,
@@ -126,7 +126,7 @@ local function projectNotes(type, float)
   if project then
     local dir = projectNotesDir .. "/" .. project
     makeNotesDir(dir)
-    searchNotes(dir, type, float)
+    M.searchNotes(dir, type, float)
   end
 end
 
@@ -138,18 +138,18 @@ function M.openLastNote(float)
       vim.cmd("edit " .. lastNote)
     end
   else
-    searchNotes("files", float)
+    M.searchNotes("files", float)
   end
 end
 
 function M.findNote(float)
   makeNotesDir(notesDir)
-  searchNotes(notesDir, "files", float)
+  M.searchNotes(notesDir, "files", float)
 end
 
 function M.grepNotes(float)
   makeNotesDir(notesDir)
-  searchNotes(notesDir, "grep", float)
+  M.searchNotes(notesDir, "grep", float)
 end
 
 function M.findProjectNote(float)
