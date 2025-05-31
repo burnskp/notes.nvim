@@ -1,47 +1,78 @@
-# A Neovim Plugin Template
+# notes.nvim
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ellisonleao/nvim-plugin-template/lint-test.yml?branch=main&style=for-the-badge)
-![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
+simple notes plugin.
 
-A template repository for Neovim plugins.
+## Features
 
-## Using it
+This is a simple notes taking plugin. It uses the Snacks picker to search notes
+via name or contents and open them as either a new buffer or a floating window.
 
-Via `gh`:
+## Requirements
 
+[Snacks](https://github.com/folke/snacks.nvim)
+
+## Installation
+
+**Using [lazy.nvim](https://github.com/folke/lazy.nvim)**
+
+```lua
+{
+  "burnskp/notes.lua",
+  dependencies = {
+    { "folke/snacks.nvim",
+      opts = { picker = { enabled = true } }
+    },
+  },
+  opts = {},
+  cmd = { "Notes", "NotesGrep", "LastNote" },
+  keys = {
+    { "<leader>nF", "<cmd>Notes<CR>",           desc = "Find Notes" },
+    { "<leader>nf", "<cmd>Notes float<CR>",     desc = "Find Notes (Float)" },
+    { "<leader>nG", "<cmd>NotesGrep<CR>",       desc = "Grep Notes" },
+    { "<leader>ng", "<cmd>NotesGrep float<CR>", desc = "Grep Notes (Float)" },
+    { "<leader>nn", "<cmd>LastNote float<CR>",  desc = "Open Last Note (Float)" },
+  }
+},
 ```
-$ gh repo create my-plugin -p ellisonleao/nvim-plugin-template
+
+## Default options
+
+```lua
+require("notes").setup({
+  notesDir = "~/notes",
+  mappings = {
+    "<C-n>" = createNote
+  }
+})
 ```
 
-Via github web page:
+## Usage
 
-Click on `Use this template`
+```vimdoc
+:Notes {float}
 
-![](https://docs.github.com/assets/cb-36544/images/help/repository/use-this-template-button.png)
+    Find note by filename and open them in a new buffer
 
-## Features and structure
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
 
-- 100% Lua
-- Github actions for:
-  - running tests using [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) and [busted](https://olivinelabs.com/busted/)
-  - check for formatting errors (Stylua)
-  - vimdocs autogeneration from README.md file
-  - luarocks release (LUAROCKS_API_KEY secret configuration required)
+:NotesGrep {float}
 
-### Plugin structure
+    Find note by contents and open them in a new buffer
 
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
+:LastNote {float}
+
+    Re-opens the last viewed note
+
+    Parameters:
+        {float} (`string?`) opens in a floating window if set to float
 ```
-.
-├── lua
-│   ├── plugin_name
-│   │   └── module.lua
-│   └── plugin_name.lua
-├── Makefile
-├── plugin
-│   └── plugin_name.lua
-├── README.md
-├── tests
-│   ├── minimal_init.lua
-│   └── plugin_name
-│       └── plugin_name_spec.lua
-```
+
+## Configuration
+
+- notesDir - path to notes
+- mappings:
+  - createNote - mapping used to create a new note

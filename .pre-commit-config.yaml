@@ -1,0 +1,40 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks.git
+  rev: v5.0.0
+  hooks:
+  - id: check-executables-have-shebangs
+  - id: check-merge-conflict
+  - id: detect-private-key
+  - id: debug-statements
+  - id: end-of-file-fixer
+  - id: fix-byte-order-marker
+  - id: mixed-line-ending
+  - id: trailing-whitespace
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.18.1
+  hooks:
+  - id: markdownlint-cli2
+- repo: https://github.com/rhysd/actionlint
+  rev: v1.7.7
+  hooks:
+  - id: actionlint-docker
+- repo: https://github.com/JohnnyMorganz/StyLua
+  rev: v2.1.0
+  hooks:
+  - id: stylua
+- repo: local
+  hooks:
+  - id: make-test
+    name: Run make test
+    entry: make test
+    language: system
+    pass_filenames: false
+- repo: https://github.com/kdheepak/panvimdoc
+  rev: v4.0.1
+  hooks:
+  - id: panvimdoc-docker
+    args:
+    - --project-name
+    - notes
+    - --input-file
+    - README.md
