@@ -10,6 +10,16 @@ vim.api.nvim_create_user_command("NotesGrep", function(opts)
   notes.grepNotes(float)
 end, { nargs = "?" })
 
+vim.api.nvim_create_user_command("ProjectNotes", function(opts)
+  local float = opts.args == "float"
+  notes.findProjectNote(float)
+end, { nargs = "?" })
+
+vim.api.nvim_create_user_command("ProjectNotesGrep", function(opts)
+  local float = opts.args == "float"
+  notes.grepProjectNotes(float)
+end, { nargs = "?" })
+
 vim.api.nvim_create_user_command("LastNote", function(opts)
   local float = opts.args == "float"
   notes.lastNote(float)

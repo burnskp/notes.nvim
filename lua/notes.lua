@@ -13,6 +13,14 @@ function M.grepNotes(float)
   require("notes.commands").grepNotes(float)
 end
 
+function M.findProjectNote(float)
+  require("notes.commands").findProjectNote(float)
+end
+
+function M.grepProjectNotes(float)
+  require("notes.commands").grepProjectNotes(float)
+end
+
 function M.lastNote(float)
   require("notes.commands").openLastNote(float)
 end

@@ -2,8 +2,25 @@ local M = {}
 
 local config = require("notes.config").config
 local notesDir = config.notesDir
+local projectNotesDir = config.projectNotesDir
 
 local lastNote = nil
+
+local function makeNotesDir(dir)
+  if vim.fn.isdirectory(dir) == 0 then
+    vim.fn.mkdir(dir, "p")
+  end
+end
+
+local function getProject()
+  local git_dir = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+  if git_dir and git_dir ~= "" and vim.fn.isdirectory(git_dir) == 1 then
+    return vim.fn.fnamemodify(git_dir, ":t")
+  else
+    vim.notify("Not in a git project.", vim.log.levels.WARN)
+    return nil
+  end
+end
 
 local function openFloat(note)
   local Snacks = require("snacks")
@@ -14,8 +31,14 @@ local function openFloat(note)
     width = 0.8,
     height = 0.8,
     style = "minimal",
+    bo = {
+      modifiable = true,
+    },
     keys = {
-      q = "close",
+      q = function(popup)
+        vim.cmd("write")
+        popup:close()
+      end,
     },
   })
 
@@ -25,7 +48,7 @@ local function openFloat(note)
   return popup
 end
 
-local function createNote(name, float)
+local function createNote(dir, name, float)
   if name == "" then
     name = os.date("%Y%m%d%H%M%S")
   end
@@ -34,12 +57,12 @@ local function createNote(name, float)
     name = name .. ".md"
   end
 
-  local note = notesDir .. "/" .. name
+  local note = dir .. "/" .. name
 
   if float then
     openFloat(note)
   else
-    vim.cmd("edit " .. note)
+    vim.cmd("e " .. note)
   end
 
   -- If it's a new file, add a title
@@ -53,30 +76,30 @@ local function createNote(name, float)
   lastNote = note
 end
 
-local function searchNotes(type, float)
+local function searchNotes(dir, type, float)
   local opts = {
     prompt = type == "files" and "Find Note:" or "Search Notes: ",
-    cwd = notesDir,
+    cwd = dir,
     confirm = function(picker, item)
       picker:close()
       if item then
         if float then
-          openFloat(notesDir .. "/" .. item.text)
+          openFloat(dir .. "/" .. item.text)
         else
-          vim.cmd("edit " .. notesDir .. "/" .. item.text)
+          vim.cmd("edit " .. dir .. "/" .. item.text)
         end
       end
     end,
     on_input = function(input)
       if input and input ~= "" then
-        createNote(input, float)
+        createNote(dir, input, float)
       end
     end,
     actions = {
       createNote = function(picker)
         local filename = picker.input:get()
         picker:close()
-        createNote(filename, float)
+        createNote(dir, filename, float)
       end,
     },
     win = {
@@ -98,6 +121,15 @@ local function searchNotes(type, float)
   Snacks.picker.pick(type, opts)
 end
 
+local function projectNotes(type, float)
+  local project = getProject()
+  if project then
+    local dir = projectNotesDir .. "/" .. project
+    makeNotesDir(dir)
+    searchNotes(dir, type, float)
+  end
+end
+
 function M.openLastNote(float)
   if lastNote and vim.fn.filereadable(lastNote) == 1 then
     if float then
@@ -111,11 +143,21 @@ function M.openLastNote(float)
 end
 
 function M.findNote(float)
-  searchNotes("files", float)
+  makeNotesDir(notesDir)
+  searchNotes(notesDir, "files", float)
 end
 
 function M.grepNotes(float)
-  searchNotes("grep", float)
+  makeNotesDir(notesDir)
+  searchNotes(notesDir, "grep", float)
+end
+
+function M.findProjectNote(float)
+  projectNotes("files", float)
+end
+
+function M.grepProjectNotes(float)
+  projectNotes("grep", float)
 end
 
 return M
