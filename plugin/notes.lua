@@ -20,6 +20,11 @@ vim.api.nvim_create_user_command("ProjectNotesGrep", function(opts)
   notes.grepProjectNotes(float)
 end, { nargs = "?" })
 
+vim.api.nvim_create_user_command("ProjectScratch", function(opts)
+  local float = opts.args == "float"
+  notes.openProjectScratch(float)
+end, { nargs = "?" })
+
 vim.api.nvim_create_user_command("LastNote", function(opts)
   local float = opts.args == "float"
   notes.lastNote(float)

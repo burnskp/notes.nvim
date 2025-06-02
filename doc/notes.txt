@@ -1,4 +1,4 @@
-*notes.txt*                    For                    Last change: 2025 May 31
+*notes.txt*                   For                    Last change: 2025 June 02
 
 ==============================================================================
 Table of Contents                                    *notes-table-of-contents*
@@ -107,6 +107,13 @@ USAGE                                                 *notes-notes.nvim-usage*
 :ProjectNotesGrep {float}
 
     Find a project note by contents and open them in a new buffer
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
+:ProjectScratch {float}
+
+    Opens scratch.md for the current project.
 
     Parameters:
       {float} (`string?`) opens in a floating window if set to float

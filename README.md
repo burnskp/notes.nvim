@@ -93,6 +93,13 @@ require("notes").setup({
     Parameters:
       {float} (`string?`) opens in a floating window if set to float
 
+:ProjectScratch {float}
+
+    Opens scratch.md for the current project.
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
 ```
 
 ## Configuration

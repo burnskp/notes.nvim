@@ -25,4 +25,8 @@ function M.lastNote(float)
   require("notes.commands").openLastNote(float)
 end
 
+function M.openProjectScratch(float)
+  require("notes.commands").openProjectScratch(float)
+end
+
 return M

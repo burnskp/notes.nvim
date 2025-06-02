@@ -160,4 +160,17 @@ function M.grepProjectNotes(float)
   projectNotes("grep", float)
 end
 
+function M.openProjectScratch(float)
+  local project = getProject()
+  if project then
+    local dir = projectNotesDir .. "/" .. project
+    makeNotesDir(dir)
+    if float then
+      openFloat(dir .. "/scratch.md")
+    else
+      vim.cmd("edit " .. dir .. "/scratch.md")
+    end
+  end
+end
+
 return M
