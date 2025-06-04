@@ -24,13 +24,9 @@ end
 
 local function openFloat(note)
   local Snacks = require("snacks")
-  local popup = Snacks.win({
+  local float_opts = vim.tbl_extend("force", config.float_opts or {}, {
     file = note,
     filetype = "markdown",
-    border = "rounded",
-    width = 0.8,
-    height = 0.8,
-    style = "minimal",
     bo = {
       modifiable = true,
     },
@@ -41,6 +37,7 @@ local function openFloat(note)
       end,
     },
   })
+  local popup = Snacks.win(float_opts)
 
   -- Update last opened note
   lastNote = note
@@ -79,27 +76,27 @@ end
 function M.searchNotes(dir, type, float)
   local opts = {
     prompt = type == "files" and "Find Note:" or "Search Notes: ",
-    cwd = dir,
+    dirs = dir,
     confirm = function(picker, item)
       picker:close()
       if item then
         if float then
-          openFloat(dir .. "/" .. item.text)
+          openFloat(item.file)
         else
-          vim.cmd("edit " .. dir .. "/" .. item.text)
+          vim.cmd("edit " .. item.file)
         end
       end
     end,
     on_input = function(input)
       if input and input ~= "" then
-        createNote(dir, input, float)
+        createNote(dir[1], input, float)
       end
     end,
     actions = {
       createNote = function(picker)
         local filename = picker.input:get()
         picker:close()
-        createNote(dir, filename, float)
+        createNote(dir[1], filename, float)
       end,
     },
     win = {
@@ -126,7 +123,7 @@ local function projectNotes(type, float)
   if project then
     local dir = projectNotesDir .. "/" .. project
     makeNotesDir(dir)
-    M.searchNotes(dir, type, float)
+    M.searchNotes({ dir }, type, float)
   end
 end
 
@@ -138,18 +135,26 @@ function M.openLastNote(float)
       vim.cmd("edit " .. lastNote)
     end
   else
-    M.searchNotes("files", float)
+    M.findNotes(float)
   end
 end
 
 function M.findNote(float)
   makeNotesDir(notesDir)
-  M.searchNotes(notesDir, "files", float)
+  M.searchNotes({ notesDir }, "files", float)
 end
 
 function M.grepNotes(float)
   makeNotesDir(notesDir)
-  M.searchNotes(notesDir, "grep", float)
+  M.searchNotes({ notesDir }, "grep", float)
+end
+
+function M.findAllNote(float)
+  M.searchNotes({ notesDir, projectNotesDir }, "files", float)
+end
+
+function M.grepAllNotes(float)
+  M.searchNotes({ notesDir, projectNotesDir }, "grep", float)
 end
 
 function M.findProjectNote(float)
@@ -160,15 +165,15 @@ function M.grepProjectNotes(float)
   projectNotes("grep", float)
 end
 
-function M.openProjectScratch(float)
+function M.openProjectNote(note, float)
   local project = getProject()
   if project then
     local dir = projectNotesDir .. "/" .. project
     makeNotesDir(dir)
     if float then
-      openFloat(dir .. "/scratch.md")
+      openFloat(dir .. "/" .. note .. ".md")
     else
-      vim.cmd("edit " .. dir .. "/scratch.md")
+      vim.cmd("edit " .. dir .. "/" .. note .. ".md")
     end
   end
 end

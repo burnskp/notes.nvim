@@ -28,17 +28,21 @@ with the git repo's name.
     },
   },
   opts = {},
-  cmd = { "Notes", "NotesGrep", "LastNote" },
+  -- cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep"},
   keys = {
-    { "<leader>nf", "<cmd>Notes float<CR>",            desc = "Find Notes (Float)" },
-    { "<leader>nF", "<cmd>Notes<CR>",                  desc = "Find Notes" },
-    { "<leader>ng", "<cmd>NotesGrep float<CR>",        desc = "Grep Notes (Float)" },
-    { "<leader>nG", "<cmd>NotesGrep<CR>",              desc = "Grep Notes" },
-    { "<leader>np", "<cmd>ProjectNotes float<CR>",     desc = "Find Project Notes (Float)" },
-    { "<leader>nP", "<cmd>ProjectNotes<CR>",           desc = "Find Project Notes" },
-    { "<leader>ns", "<cmd>ProjectNotesGrep float<CR>", desc = "Grep Project Notes (Float)" },
-    { "<leader>nS", "<cmd>ProjectNotesGrep<CR>",       desc = "Grep Project Notes" },
-    { "<leader>nn", "<cmd>LastNote float<CR>",         desc = "Open Last Note (Float)" },
+    { "<leader>na", "<cmd>NotesAllGrep float<CR>",        desc = "Grep All Notes (Float)" },
+    { "<leader>nA", "<cmd>NotesAllGrep <CR>",             desc = "Grep All Notes" },
+    { "<leader>nf", "<cmd>Notes float<CR>",               desc = "Find Notes (Float)" },
+    { "<leader>nF", "<cmd>Notes<CR>",                     desc = "Find Notes" },
+    { "<leader>ng", "<cmd>NotesGrep float<CR>",           desc = "Grep Notes (Float)" },
+    { "<leader>nG", "<cmd>NotesGrep<CR>",                 desc = "Grep Notes" },
+    { "<leader>nn", "<cmd>LastNote float<CR>",            desc = "Open Last Note (Float)" },
+    { "<leader>np", "<cmd>ProjectNotes float<CR>",        desc = "Find Project Notes (Float)" },
+    { "<leader>nP", "<cmd>ProjectNotes<CR>",              desc = "Find Project Notes" },
+    { "<leader>ns", "<cmd>ProjectNote scratch float<CR>", desc = "Project Note - Scratch (Float)" },
+    { "<leader>nS", "<cmd>ProjectNote scratch<CR>",       desc = "Grep Project NotNote - Scratch" },
+    { "<leader>nt", "<cmd>ProjectNote todo float<CR>",    desc = "Project Note - Todo (Float)" },
+    { "<leader>nT", "<cmd>ProjectNote todo<CR>",          desc = "Grep Project NotNote - Todo" },
   }
 },
 ```
@@ -67,14 +71,28 @@ require("notes").setup({
 
 :Notes {float}
 
-    Find note by filename and open them in a new buffer
+    Find a global note by filename and open them in a new buffer
 
     Parameters:
       {float} (`string?`) opens in a floating window if set to float
 
 :NotesGrep {float}
 
-    Find note by contents and open them in a new buffer
+    Find a global note by contents and open them in a new buffer
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
+:NotesAll {float}
+
+    Find a global or project note by filename and open them in a new buffer
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
+:NotesAllGrep {float}
+
+    Find a global or project note by contents and open them in a new buffer
 
     Parameters:
       {float} (`string?`) opens in a floating window if set to float
@@ -93,9 +111,9 @@ require("notes").setup({
     Parameters:
       {float} (`string?`) opens in a floating window if set to float
 
-:ProjectScratch {float}
+:ProjectNote {float}
 
-    Opens scratch.md for the current project.
+    Opens a specific note for the current project.
 
     Parameters:
       {float} (`string?`) opens in a floating window if set to float
