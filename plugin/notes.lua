@@ -2,7 +2,6 @@ local notes = require("notes")
 
 vim.api.nvim_create_user_command("Notes", function(opts)
   local float = opts.args == "float"
-  vim.notify(notes)
   notes.findNote(float)
 end, { nargs = "?" })
 

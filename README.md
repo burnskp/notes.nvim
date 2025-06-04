@@ -28,7 +28,7 @@ with the git repo's name.
     },
   },
   opts = {},
-  -- cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep"},
+  cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep"},
   keys = {
     { "<leader>na", "<cmd>NotesAllGrep float<CR>",        desc = "Grep All Notes (Float)" },
     { "<leader>nA", "<cmd>NotesAllGrep <CR>",             desc = "Grep All Notes" },
