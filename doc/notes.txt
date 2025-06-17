@@ -1,4 +1,4 @@
-*notes.txt*                   For                    Last change: 2025 June 04
+*notes.txt*                   For                    Last change: 2025 June 17
 
 ==============================================================================
 Table of Contents                                    *notes-table-of-contents*
@@ -44,7 +44,12 @@ INSTALLATION                                   *notes-notes.nvim-installation*
           opts = { picker = { enabled = true } }
         },
       },
-      opts = {},
+      opts = {
+        git = {
+          auto_commit = true,
+          auto_push = true,
+        },
+      },
       cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep"},
       keys = {
         { "<leader>na", "<cmd>NotesAllGrep float<CR>",        desc = "Grep All Notes (Float)" },
@@ -73,7 +78,12 @@ DEFAULT OPTIONS                             *notes-notes.nvim-default-options*
       projectNotesDir = "~/notes/projects",
       mappings = {
         "<C-n>" = createNote
-      }
+      },
+      git = {
+        auto_commit = false,
+        auto_push = false,
+        commit_message = "Update notes",
+      },
     })
 <
 
@@ -142,6 +152,10 @@ CONFIGURATION                                 *notes-notes.nvim-configuration*
 
 - notesDir - path to notes
 - projectNotesDir - path to project notes
+- git:
+    - auto_commit - commit the note on write
+    - auto_push = push the commit automatically
+    - commit_message - message to use for the commit
 - mappings:
     - createNote - mapping used to create a new note
 

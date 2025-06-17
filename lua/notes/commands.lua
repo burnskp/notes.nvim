@@ -1,6 +1,7 @@
 local M = {}
 
 local config = require("notes.config").config
+local git = require("notes.git")
 local notesDir = config.notesDir
 local projectNotesDir = config.projectNotesDir
 
@@ -22,6 +23,19 @@ local function getProject()
   end
 end
 
+local function openNote(note)
+  vim.cmd("edit " .. note)
+  -- Set up autocommand for git operations on non-float notes
+  local bufnr = vim.api.nvim_get_current_buf()
+  vim.api.nvim_create_autocmd("BufWritePost", {
+    buffer = bufnr,
+    callback = function()
+      git.handleGitOperations(note)
+    end,
+    once = false,
+  })
+end
+
 local function openFloat(note)
   local Snacks = require("snacks")
   local float_opts = vim.tbl_extend("force", config.float_opts or {}, {
@@ -33,6 +47,7 @@ local function openFloat(note)
     keys = {
       q = function(popup)
         vim.cmd("write")
+        git.handleGitOperations(note)
         popup:close()
       end,
     },
@@ -60,6 +75,15 @@ local function createNote(dir, name, float)
     openFloat(note)
   else
     vim.cmd("e " .. note)
+    -- Set up autocommand for git operations on non-float notes
+    local bufnr = vim.api.nvim_get_current_buf()
+    vim.api.nvim_create_autocmd("BufWritePost", {
+      buffer = bufnr,
+      callback = function()
+        git.handleGitOperations(note)
+      end,
+      once = false,
+    })
   end
 
   -- If it's a new file, add a title
@@ -83,7 +107,7 @@ function M.searchNotes(dir, type, float)
         if float then
           openFloat(item.file)
         else
-          vim.cmd("edit " .. item.file)
+          openNote(item.file)
         end
       end
     end,
@@ -132,7 +156,7 @@ function M.openLastNote(float)
     if float then
       openFloat(lastNote)
     else
-      vim.cmd("edit " .. lastNote)
+      openNote(lastNote)
     end
   else
     M.findNotes(float)
@@ -170,10 +194,11 @@ function M.openProjectNote(note, float)
   if project then
     local dir = projectNotesDir .. "/" .. project
     makeNotesDir(dir)
+    local note_path = dir .. "/" .. note .. ".md"
     if float then
-      openFloat(dir .. "/" .. note .. ".md")
+      openFloat(note_path)
     else
-      vim.cmd("edit " .. dir .. "/" .. note .. ".md")
+      openNote(note_path)
     end
   end
 end

@@ -11,6 +11,11 @@ local defaultConfig = {
     height = 0.8,
     style = "minimal",
   },
+  git = {
+    auto_commit = false,
+    auto_push = false,
+    commit_message = "Update notes",
+  },
 }
 
 function M.setupPlugin(userConfig)

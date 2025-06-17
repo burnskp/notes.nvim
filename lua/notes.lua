@@ -1,6 +1,5 @@
 local M = {}
 
----@param userConfig? Notes.Config
 function M.setup(userConfig)
   require("notes.config").setupPlugin(userConfig)
 end

@@ -27,7 +27,12 @@ with the git repo's name.
       opts = { picker = { enabled = true } }
     },
   },
-  opts = {},
+  opts = {
+    git = {
+      auto_commit = true,
+      auto_push = true,
+    },
+  },
   cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep"},
   keys = {
     { "<leader>na", "<cmd>NotesAllGrep float<CR>",        desc = "Grep All Notes (Float)" },
@@ -55,7 +60,12 @@ require("notes").setup({
   projectNotesDir = "~/notes/projects",
   mappings = {
     "<C-n>" = createNote
-  }
+  },
+  git = {
+    auto_commit = false,
+    auto_push = false,
+    commit_message = "Update notes",
+  },
 })
 ```
 
@@ -124,5 +134,9 @@ require("notes").setup({
 
 - notesDir - path to notes
 - projectNotesDir - path to project notes
+- git:
+  - auto_commit - commit the note on write
+  - auto_push = push the commit automatically
+  - commit_message - message to use for the commit
 - mappings:
   - createNote - mapping used to create a new note
