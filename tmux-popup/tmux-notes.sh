@@ -63,17 +63,17 @@ open_note() {
 }
 
 find_notes() {
-  open_note "$(FZF_DEFAULT_COMMAND="fd '$EXT' '$NOTES_DIR'" \
+  open_note "$(FZF_DEFAULT_COMMAND="fd -I '$EXT' '$NOTES_DIR'" \
     fzf --prompt="Find note: " \
     --preview="bat --style=plain --color=always --line-range=:40 {}" \
     --preview-window=up:40%:wrap \
     --bind "ctrl-n:accept" \
-    --bind "ctrl-g:reload:rg --ignore-case --files-with-matches {q} '$NOTES_DIR/**/*.md' 2>/dev/null || true" \
+    --bind "ctrl-g:reload:rg --no-ignore --ignore-case --files-with-matches {q} '$NOTES_DIR/**/*.md' 2>/dev/null || true" \
     --print-query)"
 }
 
 grep_notes() {
-  RG_PREFIX="rg --ignore-case --files-with-matches {q} '$NOTES_DIR'/**/*.md"
+  RG_PREFIX="rg --no-ignore --ignore-case --files-with-matches {q} '$NOTES_DIR'/**/*.md"
   result=$(fzf --prompt="Grep notes: " --bind "start:reload:$RG_PREFIX" \
     --bind "change:reload:$RG_PREFIX|| true" \
     --preview="bat --style=plain --color=always --line-range=:40 {}" \
