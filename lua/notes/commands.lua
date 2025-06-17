@@ -100,6 +100,7 @@ end
 function M.searchNotes(dir, type, float)
   local opts = {
     prompt = type == "files" and "Find Note:" or "Search Notes: ",
+    ignored = true,
     dirs = dir,
     confirm = function(picker, item)
       picker:close()
