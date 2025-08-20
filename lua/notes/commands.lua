@@ -60,7 +60,8 @@ local function openFloat(note)
   return popup
 end
 
-local function createNote(dir, name, float)
+function M.createNote(dir, name, float)
+  vim.notify("hi")
   if name == "" then
     name = os.date("%Y%m%d%H%M%S")
   end
@@ -70,6 +71,7 @@ local function createNote(dir, name, float)
   end
 
   local note = dir .. "/" .. name
+  vim.notify(note)
 
   if float then
     openFloat(note)
@@ -114,14 +116,14 @@ function M.searchNotes(dir, type, float)
     end,
     on_input = function(input)
       if input and input ~= "" then
-        createNote(dir[1], input, float)
+        M.createNote(dir[1], input, float)
       end
     end,
     actions = {
       createNote = function(picker)
         local filename = picker.input:get()
         picker:close()
-        createNote(dir[1], filename, float)
+        M.createNote(dir[1], filename, float)
       end,
     },
     win = {

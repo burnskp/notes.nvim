@@ -36,4 +36,9 @@ function M.openProjectNote(note, float)
   require("notes.commands").openProjectNote(note, float)
 end
 
+function M.createNote(note)
+  local dir = require("notes.config").config.notesDir
+  require("notes.commands").createNote(dir, note, false)
+end
+
 return M
