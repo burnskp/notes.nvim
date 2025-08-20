@@ -61,7 +61,6 @@ local function openFloat(note)
 end
 
 function M.createNote(dir, name, float)
-  vim.notify("hi")
   if name == "" then
     name = os.date("%Y%m%d%H%M%S")
   end
@@ -71,7 +70,6 @@ function M.createNote(dir, name, float)
   end
 
   local note = dir .. "/" .. name
-  vim.notify(note)
 
   if float then
     openFloat(note)
