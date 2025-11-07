@@ -6,7 +6,7 @@ EXT=".md"
 mkdir -p "$NOTES_DIR"
 
 # Lua code to set note-friendly options
-read -r -d '' NOTE_LUA << 'EOF'
+read -r -d '' NOTE_LUA <<'EOF'
 vim.opt_local.number = false
 vim.opt_local.relativenumber = false
 vim.opt_local.signcolumn = "no"
@@ -30,7 +30,7 @@ EOF
 popup() {
   session="notes"
 
-  if ! tmux has -t "$session" 2> /dev/null; then
+  if ! tmux has -t "$session" 2>/dev/null; then
     session_id="$(tmux new-session -dP -s "$session" -F '#{session_id}' $HOME/bin/tmux-notes.sh _popup $1)"
     tmux set-option -s -t "$session_id" key-table popup
     tmux set-option -s -t "$session_id" status off
@@ -39,7 +39,12 @@ popup() {
     session="$session_id"
   fi
 
-  exec tmux attach -t "$session" > /dev/null
+  exec tmux attach -t "$session" >/dev/null
+}
+
+commit_note() {
+  git -C "$NOTES_DIR" add "$NOTES_DIR"
+  git -C "$NOTES_DIR" commit -m "Update notes"
 }
 
 open_note() {
@@ -49,7 +54,7 @@ open_note() {
   # Write the Lua config to a temp file
   local lua_tmp
   lua_tmp=$(mktemp /tmp/note_lua.XXXXXX.lua)
-  echo "$NOTE_LUA" > "$lua_tmp"
+  echo "$NOTE_LUA" >"$lua_tmp"
 
   if [[ -n $file && -f $file ]]; then
     nvim --cmd "luafile $lua_tmp" +'nnoremap q :wq<CR>' "$file"
@@ -60,6 +65,7 @@ open_note() {
   fi
 
   rm -f "$lua_tmp"
+  commit_note
 }
 
 find_notes() {
