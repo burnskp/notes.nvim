@@ -45,6 +45,7 @@ popup() {
 commit_note() {
   git -C "$NOTES_DIR" add "$NOTES_DIR"
   git -C "$NOTES_DIR" commit -m "Update notes"
+  git -C "$NOTES_DIR" push origin HEAD
 }
 
 open_note() {
