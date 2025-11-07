@@ -45,3 +45,18 @@ vim.api.nvim_create_user_command("LastNote", function(opts)
   local float = opts.args == "float"
   notes.lastNote(float)
 end, { nargs = "?" })
+
+vim.api.nvim_create_user_command("Journal", function(opts)
+  local float = opts.args == "float"
+  notes.openJournal(float)
+end, { nargs = "?" })
+
+vim.api.nvim_create_user_command("JournalFind", function(opts)
+  local float = opts.args == "float"
+  notes.findJournal(float)
+end, { nargs = "?" })
+
+vim.api.nvim_create_user_command("JournalGrep", function(opts)
+  local float = opts.args == "float"
+  notes.grepJournal(float)
+end, { nargs = "?" })

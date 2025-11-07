@@ -11,6 +11,9 @@ It also supports project-specific notes that are stored in the projects
 directory. A project is a git repo and the notes are stored in a subdirectory
 with the git repo's name.
 
+The plugin also includes journal functionality for daily journaling with
+automatic date-based organization.
+
 ## Requirements
 
 [Snacks](https://github.com/folke/snacks.nvim)
@@ -33,7 +36,7 @@ with the git repo's name.
       auto_push = true,
     },
   },
-  cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep"},
+  cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep", "Journal", "JournalFind", "JournalGrep"},
   keys = {
     { "<leader>na", "<cmd>NotesAllGrep float<CR>",        desc = "Grep All Notes (Float)" },
     { "<leader>nA", "<cmd>NotesAllGrep <CR>",             desc = "Grep All Notes" },
@@ -46,8 +49,12 @@ with the git repo's name.
     { "<leader>nP", "<cmd>ProjectNotes<CR>",              desc = "Find Project Notes" },
     { "<leader>ns", "<cmd>ProjectNote scratch float<CR>", desc = "Project Note - Scratch (Float)" },
     { "<leader>nS", "<cmd>ProjectNote scratch<CR>",       desc = "Grep Project NotNote - Scratch" },
-    { "<leader>nt", "<cmd>ProjectNote todo float<CR>",    desc = "Project Note - Todo (Float)" },
-    { "<leader>nT", "<cmd>ProjectNote todo<CR>",          desc = "Grep Project NotNote - Todo" },
+    { "<leader>nt", "<cmd>Journal float<CR>",            desc = "Today's Journal (Float)" },
+    { "<leader>nT", "<cmd>Journal<CR>",                  desc = "Today's Journal" },
+    { "<leader>njf", "<cmd>JournalFind float<CR>",        desc = "Find Journal Entries (Float)" },
+    { "<leader>njF", "<cmd>JournalFind<CR>",              desc = "Find Journal Entries" },
+    { "<leader>njg", "<cmd>JournalGrep float<CR>",        desc = "Grep Journal Entries (Float)" },
+    { "<leader>njG", "<cmd>JournalGrep<CR>",              desc = "Grep Journal Entries" },
   }
 },
 ```
@@ -58,6 +65,8 @@ with the git repo's name.
 require("notes").setup({
   notesDir = "~/notes/global",
   projectNotesDir = "~/notes/projects",
+  journalDir = "~/notes/journal",
+  journalTemplate = "# %s\n\n",
   mappings = {
     "<C-n>" = createNote
   },
@@ -128,12 +137,37 @@ require("notes").setup({
     Parameters:
       {float} (`string?`) opens in a floating window if set to float
 
+:Journal {float}
+
+    Opens today's journal entry. Journal entries are organized by year
+    (YYYY/YYYY-MM-DD.md format). If the entry doesn't exist, it will be
+    created with a template.
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
+:JournalFind {float}
+
+    Find a journal entry by filename and open it in a new buffer
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
+:JournalGrep {float}
+
+    Find a journal entry by contents and open it in a new buffer
+
+    Parameters:
+      {float} (`string?`) opens in a floating window if set to float
+
 ```
 
 ## Configuration
 
 - notesDir - path to notes
 - projectNotesDir - path to project notes
+- journalDir - path to journal entries (organized by year)
+- journalTemplate - template string for new journal entries (%s is replaced with the date)
 - git:
   - auto_commit - commit the note on write
   - auto_push = push the commit automatically

@@ -41,4 +41,16 @@ function M.createNote(note)
   require("notes.commands").createNote(dir, note, false)
 end
 
+function M.openJournal(float)
+  require("notes.commands").openJournal(float)
+end
+
+function M.findJournal(float)
+  require("notes.commands").findJournal(float)
+end
+
+function M.grepJournal(float)
+  require("notes.commands").grepJournal(float)
+end
+
 return M

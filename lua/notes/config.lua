@@ -2,6 +2,8 @@ local M = {}
 local defaultConfig = {
   notesDir = "~/notes/global",
   projectNotesDir = "~/notes/project",
+  journalDir = "~/notes/journal",
+  journalTemplate = "# %s\n\n",
   mappings = {
     ["<c-n>"] = "createNote",
   },
@@ -22,6 +24,7 @@ function M.setupPlugin(userConfig)
   M.config = vim.tbl_deep_extend("force", defaultConfig, userConfig or {})
   M.config.notesDir = vim.fs.normalize(M.config.notesDir)
   M.config.projectNotesDir = vim.fs.normalize(M.config.projectNotesDir)
+  M.config.journalDir = vim.fs.normalize(M.config.journalDir)
 end
 
 return M

@@ -204,4 +204,49 @@ function M.openProjectNote(note, float)
   end
 end
 
+function M.openJournal(float)
+  local journalDir = config.journalDir
+  local date = os.date("*t")
+  local year = string.format("%04d", date.year)
+  local filename = string.format("%04d-%02d-%02d.md", date.year, date.month, date.day)
+
+  local year_dir = journalDir .. "/" .. year
+  makeNotesDir(year_dir)
+
+  local journal_path = year_dir .. "/" .. filename
+  local is_new = vim.fn.filereadable(journal_path) == 0
+
+  if float then
+    openFloat(journal_path)
+  else
+    openNote(journal_path)
+  end
+
+  -- If it's a new file, add the template content
+  if is_new then
+    local day_of_week = os.date("%A")
+    local date_str = string.format("%04d-%02d-%02d %s", date.year, date.month, date.day, day_of_week)
+    local template = string.format(config.journalTemplate, date_str)
+    local lines = vim.split(template, "\n", { plain = true })
+    vim.api.nvim_buf_set_lines(0, 0, 0, false, lines)
+    -- Position cursor after the template
+    vim.api.nvim_win_set_cursor(0, { #lines, 0 })
+  end
+
+  -- Update last opened note
+  lastNote = journal_path
+end
+
+function M.findJournal(float)
+  local journalDir = config.journalDir
+  makeNotesDir(journalDir)
+  M.searchNotes({ journalDir }, "files", float)
+end
+
+function M.grepJournal(float)
+  local journalDir = config.journalDir
+  makeNotesDir(journalDir)
+  M.searchNotes({ journalDir }, "grep", float)
+end
+
 return M
