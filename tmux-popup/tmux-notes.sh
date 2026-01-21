@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
-NOTES_DIR="$HOME/notes"
+set -euo pipefail
+
+NOTES_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/notes"
 EXT=".md"
 
 mkdir -p "$NOTES_DIR"
 
 # Lua code to set note-friendly options
-read -r -d '' NOTE_LUA <<'EOF'
+# read returns non-zero at EOF, which is expected
+read -r -d '' NOTE_LUA << 'EOF' || true
 vim.opt_local.number = false
 vim.opt_local.relativenumber = false
 vim.opt_local.signcolumn = "no"
@@ -28,14 +31,20 @@ vim.schedule(
 )
 EOF
 popup() {
-  session="notes"
+  local session="notes"
+  local session_id arg_escaped
 
   if ! tmux has -t "$session" 2>/dev/null; then
-    session_id="$(tmux new-session -dP -s "$session" -F '#{session_id}' tmux-notes.sh _popup "$1")"
+    # Create session with a shell first (no command yet)
+    # This prevents the race where fzf exits before we can attach
+    session_id="$(tmux new-session -dP -s "$session" -F '#{session_id}')"
     tmux set-option -s -t "$session_id" key-table popup
     tmux set-option -s -t "$session_id" status off
     tmux set-option -s -t "$session_id" prefix None
     tmux set-option -s -t "$session_id" detach-on-destroy on
+    # Safely quote the argument to prevent injection
+    arg_escaped=$(printf '%q' "${1:-}")
+    tmux send-keys -t "$session_id" "exec tmux-notes.sh _popup $arg_escaped" Enter
     session="$session_id"
   fi
 
@@ -43,61 +52,76 @@ popup() {
 }
 
 commit_note() {
+  # Only commit if there are actual changes
   git -C "$NOTES_DIR" add "$NOTES_DIR"
-  git -C "$NOTES_DIR" commit -m "Update notes"
-  git -C "$NOTES_DIR" push origin HEAD
+  if ! git -C "$NOTES_DIR" diff --cached --quiet; then
+    git -C "$NOTES_DIR" commit -m "Update notes" || return 1
+    # Push in background to avoid blocking
+    git -C "$NOTES_DIR" push origin &>/dev/null &
+  fi
 }
 
 open_note() {
+  local query file target_file
   query=$(echo "$*" | sed -n '1p')
   file=$(echo "$*" | sed -n '2p')
 
-  # Write the Lua config to a temp file
-  local lua_tmp
-  lua_tmp=$(mktemp /tmp/note_lua.XXXXXX.lua)
-  echo "$NOTE_LUA" >"$lua_tmp"
-
+  # Determine target file
   if [[ -n $file && -f $file ]]; then
-    nvim --cmd "luafile $lua_tmp" +'nnoremap q :wq<CR>' "$file"
+    target_file="$file"
   elif [[ -n $query ]]; then
     [[ $query == *$EXT ]] || query="${query}${EXT}"
-    local newfile="$NOTES_DIR/$query"
-    nvim --cmd "luafile $lua_tmp" +'nnoremap q :wq<CR>' "$newfile"
+    target_file="$NOTES_DIR/$query"
+  else
+    # No file selected, nothing to do
+    return 0
   fi
 
+  # Write the Lua config to a temp file only when needed
+  local lua_tmp
+  lua_tmp=$(mktemp /tmp/note_lua.XXXXXX.lua)
+  echo "$NOTE_LUA" > "$lua_tmp"
+
+  nvim --cmd "luafile $lua_tmp" +'nnoremap q :wq<CR>' "$target_file"
   rm -f "$lua_tmp"
+
   commit_note
 }
 
 find_notes() {
   cd "$NOTES_DIR" || exit 1
-  open_note "$(FZF_DEFAULT_COMMAND="fd -I '$EXT'" \
-    fzf --prompt="Find note: " \
+  local fzf_result
+  # fzf returns non-zero on cancel/esc, which is fine
+  fzf_result=$(FZF_DEFAULT_COMMAND="fd -I '$EXT'" \
+    fzf --no-tmux --prompt="Find note: " \
     --preview="bat --style=plain --color=always --line-range=:40 {}" \
     --preview-window=up:40%:wrap \
     --bind "ctrl-n:accept" \
     --bind "ctrl-g:reload:rg --no-ignore --ignore-case --files-with-matches {q} '**/*.md' 2>/dev/null || true" \
-    --print-query | sed "s|$NOTES_DIR/||g")"
+    --print-query | sed "s|$NOTES_DIR/||g") || true
+  open_note "$fzf_result"
 }
 
 grep_notes() {
-  RG_PREFIX="rg --no-ignore --ignore-case --files-with-matches {q} **/*.md"
+  local RG_PREFIX="rg --no-ignore --ignore-case --files-with-matches {q} **/*.md"
   cd "$NOTES_DIR" || exit 1
-  result=$(fzf --prompt="Grep notes: " --bind "start:reload:$RG_PREFIX" \
+  local result
+  # fzf returns non-zero on cancel/esc, which is fine
+  result=$(fzf --no-tmux --prompt="Grep notes: " --bind "start:reload:$RG_PREFIX" \
     --bind "change:reload:$RG_PREFIX|| true" \
     --preview="bat --style=plain --color=always --line-range=:40 {}" \
     --preview-window=up:60%:wrap \
     --ansi --disabled \
-    --print-query)
+    --print-query) || true
   open_note "$result"
 }
 
-if [[ $1 == "_popup" ]]; then
-  if [[ $2 == "grep" ]]; then
-    grep_notes "$2"
+if [[ ${1:-} == "_popup" ]]; then
+  if [[ ${2:-} == "grep" ]]; then
+    grep_notes
   else
     find_notes
   fi
 else
-  popup "$1"
+  popup "${1:-}"
 fi

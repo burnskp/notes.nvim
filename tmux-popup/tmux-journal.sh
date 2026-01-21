@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-JOURNAL_DIR="$HOME/notes/journal"
+set -euo pipefail
+
+JOURNAL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/notes/journal"
 
 # Lua code to set note-friendly options
-read -r -d '' NOTE_LUA <<'EOF'
+# read returns non-zero at EOF, which is expected
+read -r -d '' NOTE_LUA <<'EOF' || true
 vim.opt_local.number = false
 vim.opt_local.relativenumber = false
 vim.opt_local.signcolumn = "no"
@@ -26,14 +29,18 @@ vim.schedule(
 EOF
 
 popup() {
-  session="notes"
+  local session="journal"
+  local session_id
 
   if ! tmux has -t "$session" 2>/dev/null; then
-    session_id="$(tmux new-session -dP -s "$session" -F '#{session_id}' tmux-journal.sh _popup)"
+    # Create session with a shell first (no command yet)
+    # This prevents the race where the command exits before we can attach
+    session_id="$(tmux new-session -dP -s "$session" -F '#{session_id}')"
     tmux set-option -s -t "$session_id" key-table popup
     tmux set-option -s -t "$session_id" status off
     tmux set-option -s -t "$session_id" prefix None
     tmux set-option -s -t "$session_id" detach-on-destroy on
+    tmux send-keys -t "$session_id" "exec tmux-journal.sh _popup" Enter
     session="$session_id"
   fi
 
@@ -41,9 +48,13 @@ popup() {
 }
 
 commit_note() {
+  # Only commit if there are actual changes
   git -C "$JOURNAL_DIR" add "$JOURNAL_DIR"
-  git -C "$JOURNAL_DIR" commit -m "Update notes"
-  git -C "$JOURNAL_DIR" push origin HEAD
+  if ! git -C "$JOURNAL_DIR" diff --cached --quiet; then
+    git -C "$JOURNAL_DIR" commit -m "Update journal" || return 1
+    # Push in background to avoid blocking
+    git -C "$JOURNAL_DIR" push origin &>/dev/null &
+  fi
 }
 
 open_journal() {
@@ -51,18 +62,13 @@ open_journal() {
   local lua_tmp
   lua_tmp=$(mktemp /tmp/note_lua.XXXXXX.lua)
   echo "$NOTE_LUA" >"$lua_tmp"
-
-  if ! [[ -d "$JOURNAL_DIR/$(date +%Y)" ]]; then
-    mkdir "$JOURNAL_DIR/$(date +%Y)"
-  fi
-  file="$JOURNAL_DIR/$(date +%Y)/$(date +%Y-%m-%d).md"
-  nvim --cmd "luafile $lua_tmp" +'nnoremap q :wq<CR>' "$file"
+  nvim --cmd "luafile $lua_tmp" -c "Journal" +'nnoremap q :wq<CR>'
 
   rm -f "$lua_tmp"
   commit_note
 }
 
-if [[ $1 == "_popup" ]]; then
+if [[ ${1:-} == "_popup" ]]; then
   open_journal
 else
   popup
