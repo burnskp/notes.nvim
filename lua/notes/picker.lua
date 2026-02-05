@@ -49,14 +49,31 @@ end
 
 -- Telescope picker implementation
 local function telescope_pick(dir, type, opts)
-  local pickers = require("telescope.pickers")
-  local finders = require("telescope.finders")
-  local conf = require("telescope.config").values
   local actions = require("telescope.actions")
   local action_state = require("telescope.actions.state")
 
-  local search_dirs = dir
   local prompt_title = type == "files" and "Find Note" or "Search Notes"
+
+  -- For single directory, use cwd to show relative paths (like snacks)
+  -- For multiple directories, use search_dirs with custom path_display
+  local single_dir = #dir == 1
+  local cwd = single_dir and dir[1] or nil
+  local search_dirs = single_dir and nil or dir
+
+  -- Custom path display to strip notes directory prefixes when using multiple dirs
+  local path_display
+  if not single_dir then
+    path_display = function(_, path)
+      -- Strip any of the search directories from the path
+      for _, d in ipairs(dir) do
+        local prefix = d:gsub("/$", "") .. "/"
+        if path:sub(1, #prefix) == prefix then
+          return path:sub(#prefix + 1)
+        end
+      end
+      return path
+    end
+  end
 
   local function attach_mappings(prompt_bufnr, map)
     -- Override default select action
@@ -93,13 +110,17 @@ local function telescope_pick(dir, type, opts)
   if type == "files" then
     require("telescope.builtin").find_files({
       prompt_title = prompt_title,
+      cwd = cwd,
       search_dirs = search_dirs,
+      path_display = path_display,
       attach_mappings = attach_mappings,
     })
   else
     require("telescope.builtin").live_grep({
       prompt_title = prompt_title,
+      cwd = cwd,
       search_dirs = search_dirs,
+      path_display = path_display,
       attach_mappings = attach_mappings,
     })
   end
