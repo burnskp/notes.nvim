@@ -8,8 +8,8 @@ Markdown notes using [Neovim](https://neovim.io/) and the
 
 - Open a floating tmux popup for note-taking, powered by Neovim.
 - Quickly search, preview, and open existing notes using `fzf`.
-- Allows hiding the popup by pressing esc in normal mode and then using the tmux
-  keybinding to open the popup again where you left off.
+- Allows hiding the popup by pressing `C-q` and then using the tmux keybinding to
+  open the popup again where you left off.
 - Fuzzy grep for searching within notes using `ripgrep` and `fzf`.
 
 ## Requirements
@@ -36,6 +36,9 @@ Markdown notes using [Neovim](https://neovim.io/) and the
    ```tmux
    bind n display-popup -w 80% -h 80% -E ~/bin/tmux-notes.sh
    bind N display-popup -w 80% -h 80% -E ~/bin/tmux-notes.sh grep
+
+   # Popup key-table: C-q detaches (required for session preservation)
+   bind-key -T popup C-q detach-client
    ```
 
 3. (Optional) Edit `NOTES_DIR` at the top of the script to set your preferred
@@ -48,5 +51,7 @@ Markdown notes using [Neovim](https://neovim.io/) and the
 
 ### In the Neovim Popup
 
+- `C-q`: Detach the tmux popup (hide, preserving session state). Handled by tmux
+  key-table, works even when nvim is sandboxed.
 - `q`: Save and close the note.
-- `<Esc>`: Detach the tmux popup.
+- `<Esc>`: Normal vim behavior (exit insert mode, etc.).

@@ -7,29 +7,6 @@ EXT=".md"
 
 mkdir -p "$NOTES_DIR"
 
-# Lua code to set note-friendly options
-# read returns non-zero at EOF, which is expected
-read -r -d '' NOTE_LUA << 'EOF' || true
-vim.opt_local.number = false
-vim.opt_local.relativenumber = false
-vim.opt_local.signcolumn = "no"
-vim.diagnostic.enable(false, { bufnr = 0 })
-vim.opt_local.wrap = true
-vim.opt_local.linebreak = true
-vim.opt_local.conceallevel = 2
-vim.opt_local.concealcursor = "nc"
-vim.opt_local.foldenable = false
-vim.opt_local.spell = true
-vim.opt_local.textwidth = 80
-
-vim.schedule(
-  function()
-    require('lualine').hide()
-    vim.opt.laststatus = 0
-    vim.api.nvim_set_keymap('n', '<Esc>', '<cmd>silent !tmux detach<CR>', {noremap = true, silent = true})
-  end
-)
-EOF
 popup() {
   local session="notes"
   local session_id arg_escaped
@@ -77,13 +54,9 @@ open_note() {
     return 0
   fi
 
-  # Write the Lua config to a temp file only when needed
-  local lua_tmp
-  lua_tmp=$(mktemp /tmp/note_lua.XXXXXX.lua)
-  echo "$NOTE_LUA" > "$lua_tmp"
-
-  nvim --cmd "luafile $lua_tmp" +'nnoremap q :wq<CR>' "$target_file"
-  rm -f "$lua_tmp"
+  # Set sandbox project for nvim to access notes directory
+  NVIM_SANDBOX_PROJECT="$NOTES_DIR" \
+    nvim --cmd "lua require('notes.tmux-popup')" +'nnoremap q :wq<CR>' "$target_file"
 
   commit_note
 }
