@@ -53,4 +53,12 @@ function M.grepJournal(float)
   require("notes.commands").grepJournal(float)
 end
 
+function M.deleteNote()
+  require("notes.commands").deleteNote()
+end
+
+function M.renameNote(new_name)
+  require("notes.commands").renameNote(new_name)
+end
+
 return M

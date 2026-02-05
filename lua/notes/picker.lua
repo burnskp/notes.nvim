@@ -110,8 +110,24 @@ function M.pick(dir, type, opts)
   local picker = notes_config.config.picker or "snacks"
 
   if picker == "telescope" then
+    local ok, _ = pcall(require, "telescope")
+    if not ok then
+      vim.notify(
+        "Telescope is not installed. Please install telescope.nvim or set picker = 'snacks'",
+        vim.log.levels.ERROR
+      )
+      return
+    end
     telescope_pick(dir, type, opts)
   else
+    local ok, _ = pcall(require, "snacks")
+    if not ok then
+      vim.notify(
+        "Snacks is not installed. Please install snacks.nvim or set picker = 'telescope'",
+        vim.log.levels.ERROR
+      )
+      return
+    end
     snacks_pick(dir, type, opts)
   end
 end

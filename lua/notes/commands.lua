@@ -104,21 +104,41 @@ local function openFloat(note)
   return { buf = buf, win = win }
 end
 
+local function validateNoteName(name)
+  if not name or name == "" then
+    return true -- Empty names are allowed (will use timestamp)
+  end
+  -- Check for invalid characters: / \ * ? " < > |
+  if name:match('[/\\*?"<>|]') then
+    return false
+  end
+  return true
+end
+
 function M.createNote(dir, name, float)
   if not dir or dir == "" then
     vim.notify("Notes directory not configured", vim.log.levels.ERROR)
     return
   end
 
+  if not validateNoteName(name) then
+    vim.notify('Invalid note name. Cannot contain: / \\ * ? " < > |', vim.log.levels.ERROR)
+    return
+  end
+
+  local config = getConfig()
+  local ext = config.default_extension or ".md"
+
   if not name or name == "" then
     name = os.date("%Y%m%d%H%M%S")
   end
 
-  if not name:match("%.md$") then
-    name = name .. ".md"
+  -- Add extension if not present (check for any extension)
+  if not name:match("%.[^.]+$") then
+    name = name .. ext
   end
 
-  local note = dir .. "/" .. name
+  local note = vim.fs.joinpath(dir, name)
 
   if float then
     openFloat(note)
@@ -138,7 +158,8 @@ function M.createNote(dir, name, float)
 
   -- If it's a new file, add a title
   if vim.fn.filereadable(note) == 0 then
-    local title = name:gsub("%.md$", ""):gsub("(%d%d%d%d)(%d%d)(%d%d)", "%1-%2-%3")
+    -- Remove extension and format date pattern for title
+    local title = name:gsub("%.[^.]+$", ""):gsub("(%d%d%d%d)(%d%d)(%d%d)", "%1-%2-%3")
     vim.api.nvim_buf_set_lines(0, 0, 0, false, { "# " .. title, "", "" })
     vim.api.nvim_win_set_cursor(0, { 3, 0 })
   end
@@ -179,7 +200,7 @@ end
 local function projectNotes(type, float)
   local project = getProject()
   if project then
-    local dir = getConfig().projectNotesDir .. "/" .. project
+    local dir = vim.fs.joinpath(getConfig().projectNotesDir, project)
     makeNotesDir(dir)
     M.searchNotes({ dir }, type, float)
   end
@@ -234,9 +255,9 @@ function M.openProjectNote(note, float)
   end
   local project = getProject()
   if project then
-    local dir = getConfig().projectNotesDir .. "/" .. project
+    local dir = vim.fs.joinpath(getConfig().projectNotesDir, project)
     makeNotesDir(dir)
-    local note_path = dir .. "/" .. note .. ".md"
+    local note_path = vim.fs.joinpath(dir, note .. ".md")
     if float then
       openFloat(note_path)
     else
@@ -252,10 +273,10 @@ function M.openJournal(float)
   local year = string.format("%04d", date.year)
   local filename = string.format("%04d-%02d-%02d.md", date.year, date.month, date.day)
 
-  local year_dir = journalDir .. "/" .. year
+  local year_dir = vim.fs.joinpath(journalDir, year)
   makeNotesDir(year_dir)
 
-  local journal_path = year_dir .. "/" .. filename
+  local journal_path = vim.fs.joinpath(year_dir, filename)
   local is_new = vim.fn.filereadable(journal_path) == 0
 
   if float then
@@ -289,6 +310,129 @@ function M.grepJournal(float)
   local journalDir = getConfig().journalDir
   makeNotesDir(journalDir)
   M.searchNotes({ journalDir }, "grep", float)
+end
+
+function M.deleteNote()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local filepath = vim.api.nvim_buf_get_name(bufnr)
+
+  if filepath == "" then
+    vim.notify("No file to delete", vim.log.levels.WARN)
+    return
+  end
+
+  -- Check if it's in a notes directory
+  local config = getConfig()
+  local in_notes_dir = filepath:find(config.notesDir, 1, true)
+    or filepath:find(config.projectNotesDir, 1, true)
+    or filepath:find(config.journalDir, 1, true)
+
+  if not in_notes_dir then
+    vim.notify("Current file is not a note", vim.log.levels.WARN)
+    return
+  end
+
+  local filename = vim.fn.fnamemodify(filepath, ":t")
+  vim.ui.input({
+    prompt = "Delete '" .. filename .. "'? Type 'yes' to confirm: ",
+  }, function(input)
+    if input and input:lower() == "yes" then
+      -- Close the buffer first
+      vim.api.nvim_buf_delete(bufnr, { force = true })
+      -- Delete the file
+      local ok, err = os.remove(filepath)
+      if ok then
+        vim.notify("Deleted: " .. filename, vim.log.levels.INFO)
+        -- Clear lastNote if it was this file
+        if lastNote == filepath then
+          lastNote = nil
+        end
+      else
+        vim.notify("Failed to delete: " .. (err or "unknown error"), vim.log.levels.ERROR)
+      end
+    else
+      vim.notify("Delete cancelled", vim.log.levels.INFO)
+    end
+  end)
+end
+
+function M.renameNote(new_name)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local filepath = vim.api.nvim_buf_get_name(bufnr)
+
+  if filepath == "" then
+    vim.notify("No file to rename", vim.log.levels.WARN)
+    return
+  end
+
+  -- Check if it's in a notes directory
+  local config = getConfig()
+  local in_notes_dir = filepath:find(config.notesDir, 1, true)
+    or filepath:find(config.projectNotesDir, 1, true)
+    or filepath:find(config.journalDir, 1, true)
+
+  if not in_notes_dir then
+    vim.notify("Current file is not a note", vim.log.levels.WARN)
+    return
+  end
+
+  local dir = vim.fn.fnamemodify(filepath, ":h")
+  local old_name = vim.fn.fnamemodify(filepath, ":t")
+
+  local function do_rename(name)
+    if not name or name == "" then
+      vim.notify("Rename cancelled", vim.log.levels.INFO)
+      return
+    end
+
+    if not validateNoteName(name) then
+      vim.notify('Invalid note name. Cannot contain: / \\ * ? " < > |', vim.log.levels.ERROR)
+      return
+    end
+
+    -- Add extension if not present
+    if not name:match("%.[^.]+$") then
+      local ext = config.default_extension or ".md"
+      name = name .. ext
+    end
+
+    local new_path = vim.fs.joinpath(dir, name)
+
+    -- Check if target exists
+    if vim.fn.filereadable(new_path) == 1 then
+      vim.notify("File already exists: " .. name, vim.log.levels.ERROR)
+      return
+    end
+
+    -- Save any unsaved changes
+    if vim.bo[bufnr].modified then
+      vim.cmd("write")
+    end
+
+    -- Rename the file
+    local ok, err = os.rename(filepath, new_path)
+    if ok then
+      -- Update the buffer to point to the new file
+      vim.cmd("edit " .. vim.fn.fnameescape(new_path))
+      vim.api.nvim_buf_delete(bufnr, { force = true })
+      vim.notify("Renamed: " .. old_name .. " -> " .. name, vim.log.levels.INFO)
+      -- Update lastNote if it was this file
+      if lastNote == filepath then
+        lastNote = new_path
+      end
+    else
+      vim.notify("Failed to rename: " .. (err or "unknown error"), vim.log.levels.ERROR)
+    end
+  end
+
+  if new_name and new_name ~= "" then
+    do_rename(new_name)
+  else
+    vim.ui.input({
+      prompt = "New name: ",
+      default = old_name:gsub("%.[^.]+$", ""),
+    }, do_rename)
+  end
 end
 
 return M
