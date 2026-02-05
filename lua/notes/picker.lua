@@ -1,6 +1,6 @@
 local M = {}
 
-local config = require("notes.config").config
+local notes_config = require("notes.config")
 
 -- Snacks picker implementation
 local function snacks_pick(dir, type, opts)
@@ -32,7 +32,7 @@ local function snacks_pick(dir, type, opts)
       input = {
         keys = (function()
           local keymap = {}
-          for key, action in pairs(config.mappings or {}) do
+          for key, action in pairs(notes_config.config.mappings or {}) do
             keymap[key] = {
               action,
               mode = { "n", "i" },
@@ -71,7 +71,7 @@ local function telescope_pick(dir, type, opts)
 
     -- Add create note mapping
     local create_key = nil
-    for key, action in pairs(config.mappings or {}) do
+    for key, action in pairs(notes_config.config.mappings or {}) do
       if action == "createNote" then
         create_key = key
         break
@@ -107,7 +107,7 @@ end
 
 -- Main pick function that delegates to the configured picker
 function M.pick(dir, type, opts)
-  local picker = config.picker or "snacks"
+  local picker = notes_config.config.picker or "snacks"
 
   if picker == "telescope" then
     telescope_pick(dir, type, opts)
