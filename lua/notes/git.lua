@@ -1,10 +1,12 @@
 local M = {}
 
-local config = require("notes.config").config
+local function getConfig()
+  return require("notes.config").config
+end
 
 local function isGitRepo(dir)
-  local git_dir = vim.fn.systemlist("cd " .. vim.fn.shellescape(dir) .. " && git rev-parse --git-dir 2>/dev/null")[1]
-  return git_dir and git_dir ~= ""
+  local result = vim.fn.systemlist({ "git", "-C", dir, "rev-parse", "--git-dir" })
+  return vim.v.shell_error == 0 and result[1] and result[1] ~= ""
 end
 
 local function gitCommit(file)
@@ -14,14 +16,18 @@ local function gitCommit(file)
     return
   end
 
-  local cmd = string.format(
-    "cd %s && git add %s && git commit -m %s",
-    vim.fn.shellescape(dir),
-    vim.fn.shellescape(vim.fn.fnamemodify(file, ":t")),
-    vim.fn.shellescape(config.git.commit_message)
-  )
+  local filename = vim.fn.fnamemodify(file, ":t")
+  local config = getConfig()
 
-  vim.fn.system(cmd)
+  -- Add the file
+  vim.fn.system({ "git", "-C", dir, "add", filename })
+  if vim.v.shell_error ~= 0 then
+    vim.notify("Failed to stage note for git", vim.log.levels.WARN)
+    return
+  end
+
+  -- Commit the file
+  vim.fn.system({ "git", "-C", dir, "commit", "-m", config.git.commit_message })
   local exit_code = vim.v.shell_error
 
   if exit_code == 0 then
@@ -37,18 +43,21 @@ local function gitPush(file)
     return
   end
 
-  local cmd = string.format("cd %s && git push", vim.fn.shellescape(dir))
-  vim.fn.system(cmd)
-  local exit_code = vim.v.shell_error
-
-  if exit_code == 0 then
-    vim.notify("Note pushed to git", vim.log.levels.INFO)
-  else
-    vim.notify("Failed to push note to git", vim.log.levels.WARN)
-  end
+  vim.fn.jobstart({ "git", "-C", dir, "push" }, {
+    on_exit = function(_, exit_code)
+      vim.schedule(function()
+        if exit_code == 0 then
+          vim.notify("Note pushed to git", vim.log.levels.INFO)
+        else
+          vim.notify("Failed to push note to git", vim.log.levels.WARN)
+        end
+      end)
+    end,
+  })
 end
 
 function M.handleGitOperations(file)
+  local config = getConfig()
   if config.git.auto_commit then
     gitCommit(file)
     if config.git.auto_push then

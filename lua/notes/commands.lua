@@ -1,12 +1,15 @@
 local M = {}
 
-local config = require("notes.config").config
 local git = require("notes.git")
 local picker = require("notes.picker")
-local notesDir = config.notesDir
-local projectNotesDir = config.projectNotesDir
 
 local lastNote = nil
+
+local function getConfig()
+  return require("notes.config").config
+end
+
+local augroup = vim.api.nvim_create_augroup("NotesGit", { clear = false })
 
 local function makeNotesDir(dir)
   if vim.fn.isdirectory(dir) == 0 then
@@ -28,18 +31,20 @@ local function openNote(note)
   vim.cmd("edit " .. note)
   -- Set up autocommand for git operations on non-float notes
   local bufnr = vim.api.nvim_get_current_buf()
+  vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
   vim.api.nvim_create_autocmd("BufWritePost", {
+    group = augroup,
     buffer = bufnr,
     callback = function()
       git.handleGitOperations(note)
     end,
-    once = false,
   })
 end
 
 local function openFloat(note)
   -- Try Snacks first, fall back to native floating window
   local ok, Snacks = pcall(require, "snacks")
+  local config = getConfig()
   if ok then
     local float_opts = vim.tbl_extend("force", config.float_opts or {}, {
       file = note,
@@ -100,7 +105,12 @@ local function openFloat(note)
 end
 
 function M.createNote(dir, name, float)
-  if name == "" then
+  if not dir or dir == "" then
+    vim.notify("Notes directory not configured", vim.log.levels.ERROR)
+    return
+  end
+
+  if not name or name == "" then
     name = os.date("%Y%m%d%H%M%S")
   end
 
@@ -116,12 +126,13 @@ function M.createNote(dir, name, float)
     vim.cmd("e " .. note)
     -- Set up autocommand for git operations on non-float notes
     local bufnr = vim.api.nvim_get_current_buf()
+    vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
     vim.api.nvim_create_autocmd("BufWritePost", {
+      group = augroup,
       buffer = bufnr,
       callback = function()
         git.handleGitOperations(note)
       end,
-      once = false,
     })
   end
 
@@ -146,7 +157,21 @@ function M.searchNotes(dir, type, float)
       end
     end,
     on_create = function(filename)
-      M.createNote(dir[1], filename, float)
+      if #dir == 1 then
+        M.createNote(dir[1], filename, float)
+      else
+        -- Prompt user to select directory
+        vim.ui.select(dir, {
+          prompt = "Create note in:",
+          format_item = function(d)
+            return vim.fn.fnamemodify(d, ":~")
+          end,
+        }, function(choice)
+          if choice then
+            M.createNote(choice, filename, float)
+          end
+        end)
+      end
     end,
   })
 end
@@ -154,7 +179,7 @@ end
 local function projectNotes(type, float)
   local project = getProject()
   if project then
-    local dir = projectNotesDir .. "/" .. project
+    local dir = getConfig().projectNotesDir .. "/" .. project
     makeNotesDir(dir)
     M.searchNotes({ dir }, type, float)
   end
@@ -173,35 +198,43 @@ function M.openLastNote(float)
 end
 
 function M.findNote(float)
+  local notesDir = getConfig().notesDir
   makeNotesDir(notesDir)
   M.searchNotes({ notesDir }, "files", float)
 end
 
-function M.grepNotes(float)
+function M.grepNote(float)
+  local notesDir = getConfig().notesDir
   makeNotesDir(notesDir)
   M.searchNotes({ notesDir }, "grep", float)
 end
 
 function M.findAllNote(float)
-  M.searchNotes({ notesDir, projectNotesDir }, "files", float)
+  local config = getConfig()
+  M.searchNotes({ config.notesDir, config.projectNotesDir }, "files", float)
 end
 
-function M.grepAllNotes(float)
-  M.searchNotes({ notesDir, projectNotesDir }, "grep", float)
+function M.grepAllNote(float)
+  local config = getConfig()
+  M.searchNotes({ config.notesDir, config.projectNotesDir }, "grep", float)
 end
 
 function M.findProjectNote(float)
   projectNotes("files", float)
 end
 
-function M.grepProjectNotes(float)
+function M.grepProjectNote(float)
   projectNotes("grep", float)
 end
 
 function M.openProjectNote(note, float)
+  if not note or note == "" then
+    vim.notify("Note name is required", vim.log.levels.WARN)
+    return
+  end
   local project = getProject()
   if project then
-    local dir = projectNotesDir .. "/" .. project
+    local dir = getConfig().projectNotesDir .. "/" .. project
     makeNotesDir(dir)
     local note_path = dir .. "/" .. note .. ".md"
     if float then
@@ -213,6 +246,7 @@ function M.openProjectNote(note, float)
 end
 
 function M.openJournal(float)
+  local config = getConfig()
   local journalDir = config.journalDir
   local date = os.date("*t")
   local year = string.format("%04d", date.year)
@@ -246,13 +280,13 @@ function M.openJournal(float)
 end
 
 function M.findJournal(float)
-  local journalDir = config.journalDir
+  local journalDir = getConfig().journalDir
   makeNotesDir(journalDir)
   M.searchNotes({ journalDir }, "files", float)
 end
 
 function M.grepJournal(float)
-  local journalDir = config.journalDir
+  local journalDir = getConfig().journalDir
   makeNotesDir(journalDir)
   M.searchNotes({ journalDir }, "grep", float)
 end

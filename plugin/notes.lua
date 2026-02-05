@@ -11,7 +11,7 @@ end, { nargs = "?" })
 
 vim.api.nvim_create_user_command("NotesGrep", function(opts)
   local float = opts.args == "float"
-  notes.grepNotes(float)
+  notes.grepNote(float)
 end, { nargs = "?" })
 
 vim.api.nvim_create_user_command("NotesAll", function(opts)
@@ -21,7 +21,7 @@ end, { nargs = "?" })
 
 vim.api.nvim_create_user_command("NotesAllGrep", function(opts)
   local float = opts.args == "float"
-  notes.grepAllNotes(float)
+  notes.grepAllNote(float)
 end, { nargs = "?" })
 
 vim.api.nvim_create_user_command("ProjectNotes", function(opts)
@@ -31,12 +31,16 @@ end, { nargs = "?" })
 
 vim.api.nvim_create_user_command("ProjectNotesGrep", function(opts)
   local float = opts.args == "float"
-  notes.grepProjectNotes(float)
+  notes.grepProjectNote(float)
 end, { nargs = "?" })
 
 vim.api.nvim_create_user_command("ProjectNote", function(opts)
   local args = vim.split(opts.args or "", " ")
   local note = args[1]
+  if not note or note == "" then
+    vim.notify("Usage: :ProjectNote <name> [float]", vim.log.levels.WARN)
+    return
+  end
   local float = args[2] == "float"
   notes.openProjectNote(note, float)
 end, { nargs = "*" })
