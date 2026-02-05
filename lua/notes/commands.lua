@@ -2,6 +2,7 @@ local M = {}
 
 local config = require("notes.config").config
 local git = require("notes.git")
+local picker = require("notes.picker")
 local notesDir = config.notesDir
 local projectNotesDir = config.projectNotesDir
 
@@ -37,27 +38,65 @@ local function openNote(note)
 end
 
 local function openFloat(note)
-  local Snacks = require("snacks")
-  local float_opts = vim.tbl_extend("force", config.float_opts or {}, {
-    file = note,
-    filetype = "markdown",
-    bo = {
-      modifiable = true,
-    },
-    keys = {
-      q = function(popup)
-        vim.cmd("write")
-        git.handleGitOperations(note)
-        popup:close()
-      end,
-    },
+  -- Try Snacks first, fall back to native floating window
+  local ok, Snacks = pcall(require, "snacks")
+  if ok then
+    local float_opts = vim.tbl_extend("force", config.float_opts or {}, {
+      file = note,
+      filetype = "markdown",
+      bo = {
+        modifiable = true,
+      },
+      keys = {
+        q = function(popup)
+          vim.cmd("write")
+          git.handleGitOperations(note)
+          popup:close()
+        end,
+      },
+    })
+    local popup = Snacks.win(float_opts)
+    lastNote = note
+    return popup
+  end
+
+  -- Native floating window fallback
+  local float_opts = config.float_opts or {}
+  local width = float_opts.width or 0.8
+  local height = float_opts.height or 0.8
+
+  -- Convert percentages to actual dimensions
+  local ui = vim.api.nvim_list_uis()[1]
+  local win_width = math.floor(ui.width * (width < 1 and width or 1))
+  local win_height = math.floor(ui.height * (height < 1 and height or 1))
+  local row = math.floor((ui.height - win_height) / 2)
+  local col = math.floor((ui.width - win_width) / 2)
+
+  -- Create buffer and load file
+  local buf = vim.fn.bufadd(note)
+  vim.fn.bufload(buf)
+  vim.bo[buf].filetype = "markdown"
+
+  -- Create floating window
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = win_width,
+    height = win_height,
+    row = row,
+    col = col,
+    style = float_opts.style or "minimal",
+    border = float_opts.border or "rounded",
   })
-  local popup = Snacks.win(float_opts)
 
-  -- Update last opened note
+  -- Set up q keymap to save and close
+  vim.keymap.set("n", "q", function()
+    vim.cmd("write")
+    git.handleGitOperations(note)
+    vim.api.nvim_win_close(win, true)
+  end, { buffer = buf })
+
   lastNote = note
-
-  return popup
+  return { buf = buf, win = win }
 end
 
 function M.createNote(dir, name, float)
@@ -98,50 +137,18 @@ function M.createNote(dir, name, float)
 end
 
 function M.searchNotes(dir, type, float)
-  local opts = {
-    prompt = type == "files" and "Find Note:" or "Search Notes: ",
-    ignored = true,
-    cwd = #dir == 1 and dir[1] or nil,
-    dirs = #dir == 1 and nil or dir,
-    confirm = function(picker, item)
-      picker:close()
-      if item then
-        if float then
-          openFloat(item.file)
-        else
-          openNote(item.file)
-        end
+  picker.pick(dir, type, {
+    on_select = function(file)
+      if float then
+        openFloat(file)
+      else
+        openNote(file)
       end
     end,
-    on_input = function(input)
-      if input and input ~= "" then
-        M.createNote(dir[1], input, float)
-      end
+    on_create = function(filename)
+      M.createNote(dir[1], filename, float)
     end,
-    actions = {
-      createNote = function(picker)
-        local filename = picker.input:get()
-        picker:close()
-        M.createNote(dir[1], filename, float)
-      end,
-    },
-    win = {
-      input = {
-        keys = (function()
-          local keymap = {}
-          for key, action in pairs(config.mappings or {}) do
-            keymap[key] = {
-              action,
-              mode = { "n", "i" },
-            }
-          end
-          return keymap
-        end)(),
-      },
-    },
-  }
-
-  Snacks.picker.pick(type, opts)
+  })
 end
 
 local function projectNotes(type, float)

@@ -4,8 +4,11 @@ simple notes plugin.
 
 ## Features
 
-This is a simple notes taking plugin. It uses the Snacks picker to search notes
-via name or contents and open them as either a new buffer or a floating window.
+This is a simple notes taking plugin. It supports both
+[Snacks](https://github.com/folke/snacks.nvim) and
+[Telescope](https://github.com/nvim-telescope/telescope.nvim) as picker backends
+to search notes via name or contents and open them as either a new buffer or a
+floating window.
 
 It also supports project-specific notes that are stored in the projects
 directory. A project is a git repo and the notes are stored in a subdirectory
@@ -16,11 +19,15 @@ automatic date-based organization.
 
 ## Requirements
 
-[Snacks](https://github.com/folke/snacks.nvim)
+One of:
+- [Snacks](https://github.com/folke/snacks.nvim) (default)
+- [Telescope](https://github.com/nvim-telescope/telescope.nvim)
 
 ## Installation
 
 **Using [lazy.nvim](https://github.com/folke/lazy.nvim)**
+
+With Snacks (default):
 
 ```lua
 {
@@ -59,6 +66,28 @@ automatic date-based organization.
 },
 ```
 
+With Telescope:
+
+```lua
+{
+  "burnskp/notes.lua",
+  dependencies = {
+    "nvim-telescope/telescope.nvim",
+  },
+  opts = {
+    picker = "telescope",
+    git = {
+      auto_commit = true,
+      auto_push = true,
+    },
+  },
+  cmd = {"LastNote", "Notes", "NotesAll", "NotesAllGrep", "NotesGrep", "ProjectNote", "ProjectNotes", "ProjectNotesGrep", "Journal", "JournalFind", "JournalGrep"},
+  keys = {
+    -- same keybindings as above
+  }
+},
+```
+
 ## Default options
 
 ```lua
@@ -67,6 +96,7 @@ require("notes").setup({
   projectNotesDir = "~/notes/projects",
   journalDir = "~/notes/journal",
   journalTemplate = "# %s\n\n",
+  picker = "snacks", -- "snacks" or "telescope"
   mappings = {
     "<C-n>" = createNote
   },
@@ -168,6 +198,7 @@ require("notes").setup({
 - projectNotesDir - path to project notes
 - journalDir - path to journal entries (organized by year)
 - journalTemplate - template string for new journal entries (%s is replaced with the date)
+- picker - picker backend to use: `"snacks"` (default) or `"telescope"`
 - git:
   - auto_commit - commit the note on write
   - auto_push = push the commit automatically

@@ -4,6 +4,7 @@ local defaultConfig = {
   projectNotesDir = "~/notes/project",
   journalDir = "~/notes/journal",
   journalTemplate = "# %s\n\n",
+  picker = "snacks", -- "snacks" or "telescope"
   mappings = {
     ["<c-n>"] = "createNote",
   },
