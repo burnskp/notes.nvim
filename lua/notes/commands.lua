@@ -193,7 +193,7 @@ function M.openLastNote(float)
       openNote(lastNote)
     end
   else
-    M.findNotes(float)
+    M.findNote(float)
   end
 end
 

@@ -12,6 +12,9 @@ vim.opt_local.spell = true
 vim.opt_local.textwidth = 80
 
 vim.schedule(function()
-  require('lualine').hide()
+  local ok, lualine = pcall(require, 'lualine')
+  if ok then
+    lualine.hide()
+  end
   vim.opt.laststatus = 0
 end)
