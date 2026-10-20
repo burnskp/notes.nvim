@@ -1,0 +1,6 @@
+std = "lua51+nvim"
+
+exclude = ["doc/*.lua"]
+
+[lints]
+mixed_table = "allow"
